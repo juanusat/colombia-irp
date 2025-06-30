@@ -400,61 +400,62 @@ def solve_inventory_routing_problem_three_phase(
     }
 
 if __name__ == '__main__':
-    penalizacion_desabastecimiento_rangos = [100, 50, 80, 120]
-    capacidad_vehiculo_rangos = [1500, 1200, 800, 500]
+    penalizacion_desabastecimiento_rangos = [100, 50, 80, 120]  # Diferentes valores de penalización por desabastecimiento
+    capacidad_vehiculo_rangos = [1500, 1200, 800, 500]  # Diferentes capacidades de los vehículos
     
-    costo_inventario_fijo_para_escenarios = original_costo_inventario_unitario_por_cliente 
+    costo_inventario_fijo_para_escenarios = original_costo_inventario_unitario_por_cliente  # Costos de inventario fijos
 
-    todos_los_resultados_sensibilidad = []
+    todos_los_resultados_sensibilidad = []  # Lista para almacenar resultados de todos los escenarios
 
-    output_folder = "informe_sensibilidad_graficas"
+    output_folder = "informe_sensibilidad_graficas"  # Carpeta para guardar las gráficas
     if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+        os.makedirs(output_folder)  # Crea la carpeta si no existe
         print(f"\nCarpeta '{output_folder}' creada para guardar las gráficas.")
 
-    for penalizacion_val in penalizacion_desabastecimiento_rangos:
-        for capacidad_val in capacidad_vehiculo_rangos:
+    for penalizacion_val in penalizacion_desabastecimiento_rangos:  # Itera sobre los valores de penalización
+        for capacidad_val in capacidad_vehiculo_rangos:  # Itera sobre las capacidades de los vehículos
                 print(f"\n{'='*60}")
                 print(f"--- INICIANDO NUEVO ESCENARIO: Penalización={penalizacion_val}, Capacidad={capacidad_val} ---")
                 print(f"{'='*60}\n")
                 
+                # Ejecuta el modelo para el escenario actual
                 resultado_escenario = solve_inventory_routing_problem_three_phase(
-                    current_cantidad_total_producto_deposito=original_cantidad_total_producto_deposito,
-                    current_capacidad_vehiculo_unit=capacidad_val,
-                    current_costo_penalizacion_desabastecimiento_unit=penalizacion_val,
-                    current_demanda_clientes_AI=original_demanda_clientes_AI,
-                    current_num_vehiculos_reales=original_num_vehiculos_reales, 
-                    current_costos_base_ij=original_costos_base_ij,
-                    current_costo_inventario_unitario_por_cliente=costo_inventario_fijo_para_escenarios
+                    current_cantidad_total_producto_deposito=original_cantidad_total_producto_deposito,  # Inventario inicial
+                    current_capacidad_vehiculo_unit=capacidad_val,  # Capacidad del vehículo
+                    current_costo_penalizacion_desabastecimiento_unit=penalizacion_val,  # Penalización por desabastecimiento
+                    current_demanda_clientes_AI=original_demanda_clientes_AI,  # Demanda de los clientes
+                    current_num_vehiculos_reales=original_num_vehiculos_reales,  # Número de vehículos disponibles
+                    current_costos_base_ij=original_costos_base_ij,  # Matriz de costos de viaje
+                    current_costo_inventario_unitario_por_cliente=costo_inventario_fijo_para_escenarios  # Costos de inventario
                 )
                 
-                todos_los_resultados_sensibilidad.append(resultado_escenario)
+                todos_los_resultados_sensibilidad.append(resultado_escenario)  # Almacena el resultado del escenario
                 print(f"\n--- FIN DEL ESCENARIO: Penalización={penalizacion_val}, Capacidad={capacidad_val} ---\n")
 
     print("\n\n" + "="*80)
     print("--- INFORME DE SENSIBILIDAD COMPLETO DE TODOS LOS ESCENARIOS ---")
     print("="*80)
-    df_resultados = pd.DataFrame(todos_los_resultados_sensibilidad)
-    print(df_resultados.to_string())
+    df_resultados = pd.DataFrame(todos_los_resultados_sensibilidad)  # Convierte los resultados a un DataFrame
+    print(df_resultados.to_string())  # Muestra los resultados en formato tabular
 
     # Nuevo bloque para imprimir la FO de cada escenario al final
     print("\n--- Valores de la Función Objetivo (FO) para cada escenario ---")
     for idx, row in df_resultados.iterrows():
-        print(f"Escenario P={row['penalizacion_unit']}, C={row['capacidad_vehiculo']}: FO = {row['costo_total_solucion']:.2f}")
+        print(f"Escenario P={row['penalizacion_unit']}, C={row['capacidad_vehiculo']}: FO = {row['costo_total_solucion']:.2f}")  # Imprime la FO
 
-    plt.figure(figsize=(15, len(df_resultados) * 0.3 + 2)) 
-    ax = plt.subplot(111, frame_on=False) 
-    ax.xaxis.set_visible(False)  
-    ax.yaxis.set_visible(False)  
-    table = pd.plotting.table(ax, df_resultados, loc='center', cellLoc='center') 
+    plt.figure(figsize=(15, len(df_resultados) * 0.3 + 2))  # Configura el tamaño de la figura
+    ax = plt.subplot(111, frame_on=False)  # Crea un subplot sin marco
+    ax.xaxis.set_visible(False)  # Oculta el eje X
+    ax.yaxis.set_visible(False)  # Oculta el eje Y
+    table = pd.plotting.table(ax, df_resultados, loc='center', cellLoc='center')  # Crea una tabla con los resultados
     table.auto_set_font_size(False)
-    table.set_fontsize(9) 
-    table.scale(2.4, 1.2) 
-    plt.title('Informe de Sensibilidad - Resumen Tabular', fontsize=14) 
+    table.set_fontsize(9)  # Ajusta el tamaño de la fuente
+    table.scale(2.4, 1.2)  # Escala la tabla
+    plt.title('Informe de Sensibilidad - Resumen Tabular', fontsize=14)  # Título de la tabla
     plt.tight_layout()
-    plt.savefig(os.path.join(output_folder, 'informe_sensibilidad_tabla_resumen.png')) 
-    plt.show() 
-    
+    plt.savefig(os.path.join(output_folder, 'informe_sensibilidad_tabla_resumen.png'))  # Guarda la tabla como imagen
+    plt.show()  # Muestra la tabla
+
     print("\n--- Generando y guardando Gráficos de Sensibilidad ---")
     try:
         
