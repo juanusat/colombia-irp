@@ -6,23 +6,24 @@ import os
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 
+# === CONFIGURACIÓN SEGÚN base_modelo_ceplex.txt ===
 client_names = [
     'Depot Armenia', 'Barranq 01', 'Barranq 02', 'Bogota', 'Cali 01',
     'Cali 02', 'Cali 03', 'Cali 04', 'Cali 05'
 ]
 name_to_index = {name: i for i, name in enumerate(client_names)}
 depot_idx = name_to_index['Depot Armenia']
-n_total_nodos = len(client_names)
-num_clientes = n_total_nodos - 1
+n_total_nodos = len(client_names)  # 10 nodos (0=depósito, 1..9=clientes)
+num_clientes = n_total_nodos - 1  # 9 clientes
 
 original_num_vehiculos_reales = 3
 original_capacidad_vehiculo_unit = 1500
 original_demanda_clientes_original = [
-    0,
-    400, 400, 1200, 200, 600, 1400, 1400, 400, 1000
+    0,    # Depósito
+    200, 200, 600, 100, 300, 700, 700, 200, 500
 ]
 original_demanda_clientes_AI = {i: original_demanda_clientes_original[i] for i in range(1, num_clientes + 1)}
-original_cantidad_total_producto_deposito = 5000
+original_cantidad_total_producto_deposito = 12000
 original_costo_penalizacion_desabastecimiento_unit = 100
 
 original_costo_inventario_unitario_por_cliente = {
