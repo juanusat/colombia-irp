@@ -382,6 +382,9 @@ def solve_inventory_routing_problem_three_phase(
             print(f"    Costo de Ruta: {detail['cost']}")
             print("-" * 30)
             
+    # Calcular costo promedio por ruta
+    costo_promedio_por_ruta = total_transport_cost / len(routes_details) if len(routes_details) > 0 else 0
+    
     return {
         'penalizacion_unit': current_costo_penalizacion_desabastecimiento_unit,
         'capacidad_vehiculo': current_capacidad_vehiculo_unit,
@@ -393,7 +396,8 @@ def solve_inventory_routing_problem_three_phase(
         'num_rutas_generadas': len(routes_details),
         'total_demanda_original': total_original_demand,
         'total_entregado': total_delivered,
-        'inventario_final_deposito': current_cantidad_total_producto_deposito - total_delivered
+        'inventario_final_deposito': current_cantidad_total_producto_deposito - total_delivered,
+        'costo_promedio_por_ruta': costo_promedio_por_ruta
     }
 
 if __name__ == '__main__':
@@ -561,6 +565,69 @@ if __name__ == '__main__':
         plt.legend(title='Capacidad Vehículo', bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
         plt.savefig(os.path.join(output_folder, 'costo_inventario_entregado_vs_penalizacion.png'))
+        plt.show()
+
+        # Nueva gráfica: Costo Promedio por Ruta vs. Capacidad del Vehículo
+        plt.figure(figsize=(12, 7))
+        sns.lineplot(
+            data=df_resultados,
+            x='capacidad_vehiculo',
+            y='costo_promedio_por_ruta',
+            hue='penalizacion_unit',
+            marker='o',
+            palette='viridis',
+            linewidth=2.5,
+            markersize=8
+        )
+        plt.title('Costo Promedio por Camión/Ruta vs. Capacidad del Vehículo', fontsize=16, fontweight='bold')
+        plt.xlabel('Capacidad del Vehículo (unidades)', fontsize=12)
+        plt.ylabel('Costo Promedio por Ruta', fontsize=12)
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.legend(title='Costo de Penalización', bbox_to_anchor=(1.05, 1), loc='upper left')
+        
+        # Agregar anotaciones para mostrar valores específicos
+        for penalizacion in df_resultados['penalizacion_unit'].unique():
+            subset = df_resultados[df_resultados['penalizacion_unit'] == penalizacion]
+            for _, row in subset.iterrows():
+                plt.annotate(f'{row["costo_promedio_por_ruta"]:.0f}', 
+                           (row['capacidad_vehiculo'], row['costo_promedio_por_ruta']),
+                           textcoords="offset points", xytext=(0,10), ha='center', fontsize=8)
+        
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_folder, 'costo_promedio_por_ruta_vs_capacidad.png'), dpi=300, bbox_inches='tight')
+        plt.show()
+        
+        # Gráfica adicional: Gráfica de barras agrupadas para mejor visualización
+        plt.figure(figsize=(14, 8))
+        
+        # Crear gráfico de barras agrupadas
+        capacidades = df_resultados['capacidad_vehiculo'].unique()
+        penalizaciones = df_resultados['penalizacion_unit'].unique()
+        
+        x = range(len(capacidades))
+        width = 0.2
+        
+        for i, penalizacion in enumerate(penalizaciones):
+            subset = df_resultados[df_resultados['penalizacion_unit'] == penalizacion]
+            costos = [subset[subset['capacidad_vehiculo'] == cap]['costo_promedio_por_ruta'].iloc[0] for cap in capacidades]
+            
+            plt.bar([xi + width*i for xi in x], costos, width, 
+                   label=f'Penalización = {penalizacion}', alpha=0.8)
+            
+            # Agregar valores en las barras
+            for j, costo in enumerate(costos):
+                plt.text(x[j] + width*i, costo + 5, f'{costo:.0f}', 
+                        ha='center', va='bottom', fontsize=9, fontweight='bold')
+        
+        plt.xlabel('Capacidad del Vehículo (unidades)', fontsize=12)
+        plt.ylabel('Costo Promedio por Ruta', fontsize=12)
+        plt.title('Costo Promedio por Camión/Ruta según Capacidad del Vehículo\n(Comparación por Diferentes Costos de Penalización)', 
+                 fontsize=14, fontweight='bold')
+        plt.xticks([xi + width*1.5 for xi in x], capacidades)
+        plt.legend(title='Costo de Penalización', bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_folder, 'costo_promedio_por_ruta_barras_agrupadas.png'), dpi=300, bbox_inches='tight')
         plt.show()
 
     except Exception as e:
