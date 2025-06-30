@@ -159,8 +159,8 @@ def clarke_wright_savings_parallel(depot_idx, clients_to_route, demands, vehicle
         if route_i_idx == route_j_idx:
             continue  # No fusionar la misma ruta
             
-        endpoints_i = route_endpoints.get(route_i_idx)
-        endpoints_j = route_endpoints.get(route_j_idx)
+        endpoints_i = route_endpoints.get(route_i_idx)  # Extremos de la ruta de i
+        endpoints_j = route_endpoints.get(route_j_idx)  # Extremos de la ruta de j
 
         if endpoints_i is None or endpoints_j is None:
             continue  # Si alguna ruta ya fue fusionada, salta
@@ -168,8 +168,8 @@ def clarke_wright_savings_parallel(depot_idx, clients_to_route, demands, vehicle
         can_merge = False  # Bandera para saber si se puede fusionar
         new_route_nodes = []  # Nueva ruta fusionada
         new_route_load = 0  # Nueva carga
-        new_start_client = -1
-        new_end_client = -1
+        new_start_client = -1  # Nuevo inicio de la ruta
+        new_end_client = -1  # Nuevo fin de la ruta
 
         if i == endpoints_i['end'] and j == endpoints_j['start']:
             temp_route_i_nodes = current_routes[route_i_idx]  # Ruta de i
@@ -180,18 +180,18 @@ def clarke_wright_savings_parallel(depot_idx, clients_to_route, demands, vehicle
             
             new_start_client = endpoints_i['start']  # Nuevo inicio
             new_end_client = endpoints_j['end']  # Nuevo fin
-            can_merge = True
+            can_merge = True  # Se puede fusionar
 
         elif j == endpoints_j['end'] and i == endpoints_i['start']:
-            temp_route_j_nodes = current_routes[route_j_idx]
-            temp_route_i_nodes = current_routes[route_i_idx]
+            temp_route_j_nodes = current_routes[route_j_idx]  # Ruta de j
+            temp_route_i_nodes = current_routes[route_i_idx]  # Ruta de i
             
             new_route_nodes = temp_route_j_nodes[:-1] + temp_route_i_nodes[1:]  # Fusiona rutas
             new_route_load = current_route_loads[route_j_idx] + current_route_loads[route_i_idx]  # Suma cargas
             
             new_start_client = endpoints_j['start']  # Nuevo inicio
             new_end_client = endpoints_i['end']  # Nuevo fin
-            can_merge = True
+            can_merge = True  # Se puede fusionar
 
         if can_merge and new_route_load <= vehicle_capacity_unit:
             new_route_idx = len(current_routes)  # Índice de la nueva ruta
@@ -202,14 +202,14 @@ def clarke_wright_savings_parallel(depot_idx, clients_to_route, demands, vehicle
             for client_node in current_routes[route_i_idx][1:-1]:
                 client_to_route_map[client_node] = new_route_idx  # Actualiza mapeo de clientes
             for client_node in current_routes[route_j_idx][1:-1]:
-                client_to_route_map[client_node] = new_route_idx
+                client_to_route_map[client_node] = new_route_idx  # Actualiza mapeo de clientes
 
             current_routes[route_i_idx] = None  # Marca rutas fusionadas como None
-            current_routes[route_j_idx] = None
-            current_route_loads[route_i_idx] = 0
-            current_route_loads[route_j_idx] = 0
-            del route_endpoints[route_i_idx]
-            del route_endpoints[route_j_idx]
+            current_routes[route_j_idx] = None  # Marca rutas fusionadas como None
+            current_route_loads[route_i_idx] = 0  # Carga a cero para rutas fusionadas
+            current_route_loads[route_j_idx] = 0  # Carga a cero para rutas fusionadas
+            del route_endpoints[route_i_idx]  # Elimina extremos de la ruta fusionada
+            del route_endpoints[route_j_idx]  # Elimina extremos de la ruta fusionada
 
     final_routes = []  # Rutas finales
     final_route_loads = []  # Cargas finales
