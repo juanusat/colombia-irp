@@ -1,0 +1,40 @@
+int n = 9; // Reducido de 15 a 9 clientes
+range Clientes = 1..n;
+range Nodos = 0..n;
+
+int K = 3;
+range VehiculosReales = 1..K;
+range VehiculosIncluyendoFicticio = 0..K;
+
+float CapacidadVehiculo = 1500;
+float CapacidadVehiculoFicticio = 0;
+
+float CantidadTotalProductoDepot = 12000;
+float CostoPenalizacionDesabastecimientoUnit = 100;
+
+// Demanda reducida para los 9 clientes + el depósito (nodo 0)
+float DemandaCliente[Nodos] = [
+    0, // Demanda para el nodo 0 (depósito) es 0
+    200, 200, 600, 100, 300, 700, 700, 200, 500
+];
+
+// Costos de viaje reducidos a una matriz (Nodos x Nodos), es decir (10x10)
+int CostoViaje[Nodos][Nodos] = [
+  [0, 1098, 1098, 286, 194, 194, 194, 194, 194, 935],
+  [1098, 0, 1302, 1212, 1212, 1212, 1212, 1212, 926, 1302],
+  [1098, 1302, 0, 1212, 1212, 1212, 1212, 1212, 926, 1302],
+  [286, 1212, 1212, 0, 484, 484, 484, 484, 484, 649],
+  [194, 1212, 1212, 484, 0, 4, 4, 4, 4, 1133],
+  [194, 1212, 1212, 484, 4, 0, 4, 4, 4, 1133],
+  [194, 1212, 1212, 484, 4, 4, 0, 4, 4, 1133],
+  [194, 1212, 1212, 484, 4, 4, 4, 0, 4, 1133],
+  [194, 926, 926, 484, 4, 4, 4, 4, 0, 1133],
+  [935, 1302, 1302, 649, 1133, 1133, 1133, 1133, 1133, 0]
+];
+
+// Costos de inventario unitarios reducidos para los 9 clientes
+float CostoInventarioUnitario[Clientes] = [
+    6, 4, 5, 7, 6, 3, 6, 7, 5
+];
+
+float BigM_W_max = 700;
