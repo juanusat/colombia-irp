@@ -74,37 +74,37 @@ def phase1_inventory_assignment(available_inventory, client_demands, costo_penal
     print("\n--- FASE I: Problema de Asignación de Inventarios (AI) ---")
     print(f"    Inventario total disponible en depósito (A): {available_inventory}")
 
-    assigned_quantities = {i: 0 for i in client_demands.keys()}
-    unsatisfied_quantities = {i: 0 for i in client_demands.keys()}
-    total_unsatisfied_demand_cost = 0
-    total_inventory_holding_cost = 0
-    current_inventory = available_inventory
-    clients_to_be_routed = []
+    assigned_quantities = {i: 0 for i in client_demands.keys()}  # Inicializa cantidades asignadas a 0 para cada cliente
+    unsatisfied_quantities = {i: 0 for i in client_demands.keys()}  # Inicializa cantidades no satisfechas a 0
+    total_unsatisfied_demand_cost = 0  # Acumula el costo total de penalización
+    total_inventory_holding_cost = 0  # Acumula el costo total de inventario
+    current_inventory = available_inventory  # Inventario disponible en el depósito
+    clients_to_be_routed = []  # Lista de clientes a rutear
 
-    sorted_client_indices = sorted(client_demands.keys())
+    sorted_client_indices = sorted(client_demands.keys())  # Ordena los índices de clientes
 
     for client_idx in sorted_client_indices:
-        demand = client_demands[client_idx]
+        demand = client_demands[client_idx]  # Demanda del cliente actual
         if current_inventory > 0:
-            quantity_to_assign = min(current_inventory, demand)
-            assigned_quantities[client_idx] = quantity_to_assign
-            current_inventory -= quantity_to_assign
+            quantity_to_assign = min(current_inventory, demand)  # Asigna lo que se pueda según inventario
+            assigned_quantities[client_idx] = quantity_to_assign  # Registra la cantidad asignada
+            current_inventory -= quantity_to_assign  # Actualiza el inventario restante
             
-            costo_unitario = costo_inventario_unitario_por_cliente.get(client_idx, 0)
-            costo_por_cliente_entregado = quantity_to_assign * costo_unitario
-            total_inventory_holding_cost += costo_por_cliente_entregado
+            costo_unitario = costo_inventario_unitario_por_cliente.get(client_idx, 0)  # Costo unitario de inventario
+            costo_por_cliente_entregado = quantity_to_assign * costo_unitario  # Costo total de inventario para el cliente
+            total_inventory_holding_cost += costo_por_cliente_entregado  # Suma al total de inventario
             
             print(f"    Cliente {client_names[client_idx]} (Demanda {demand}): Se asignan {quantity_to_assign} unidades (Costo Inv. {costo_unitario}/u). Inventario restante: {current_inventory}")
             if quantity_to_assign > 0:
-                clients_to_be_routed.append(client_idx)
+                clients_to_be_routed.append(client_idx)  # Agrega cliente a la lista de ruteo si recibió algo
         else:
             print(f"    Cliente {client_names[client_idx]} (Demanda {demand}): No hay inventario disponible para asignar.")
 
     for client_idx in sorted_client_indices:
-        unsatisfied_quantities[client_idx] = client_demands[client_idx] - assigned_quantities[client_idx]
+        unsatisfied_quantities[client_idx] = client_demands[client_idx] - assigned_quantities[client_idx]  # Calcula demanda no satisfecha
         if unsatisfied_quantities[client_idx] > 0:
-            cost_for_client = unsatisfied_quantities[client_idx] * costo_penalizacion_unit
-            total_unsatisfied_demand_cost += cost_for_client
+            cost_for_client = unsatisfied_quantities[client_idx] * costo_penalizacion_unit  # Calcula penalización
+            total_unsatisfied_demand_cost += cost_for_client  # Suma al total de penalización
             print(f"    Cliente {client_names[client_idx]}: {unsatisfied_quantities[client_idx]} unidades no satisfechas. Costo penalización: {cost_for_client}")
 
     print(f"\n    Costo Total de Penalización por Demanda No Satisfecha: {total_unsatisfied_demand_cost}")
@@ -113,16 +113,16 @@ def phase1_inventory_assignment(available_inventory, client_demands, costo_penal
     return assigned_quantities, unsatisfied_quantities, total_unsatisfied_demand_cost, total_inventory_holding_cost, clients_to_be_routed
 
 def calculate_savings(depot_idx, clients, distance_matrix):
-    savings = {}
+    savings = {}  # Diccionario para almacenar los ahorros
     for i in clients:
         for j in clients:
             if i != j:
                 s_ij = distance_matrix.get((depot_idx, i), INFINITE_COST) + \
                              distance_matrix.get((j, depot_idx), INFINITE_COST) - \
-                             distance_matrix.get((i, j), INFINITE_COST)
+                             distance_matrix.get((i, j), INFINITE_COST)  # Fórmula de ahorros Clarke & Wright
                 if s_ij != INFINITE_COST:
-                    savings[(i, j)] = s_ij
-    return sorted(savings.items(), key=lambda item: item[1], reverse=True)
+                    savings[(i, j)] = s_ij  # Guarda el ahorro para el par (i, j)
+    return sorted(savings.items(), key=lambda item: item[1], reverse=True)  # Ordena de mayor a menor ahorro
 
 def clarke_wright_savings_parallel(depot_idx, clients_to_route, demands, vehicle_capacity_unit, num_vehiculos_disponibles, distance_matrix):
     print("\n--- FASE II (Paso 1): Algoritmo de Ahorros de Clarke & Wright (Paralelo) ---")
@@ -131,94 +131,94 @@ def clarke_wright_savings_parallel(depot_idx, clients_to_route, demands, vehicle
         print("    No hay clientes para rutear en esta fase.")
         return [], []
 
-    client_to_route_map = {}
-    current_routes = []
-    current_route_loads = []
+    client_to_route_map = {}  # Mapea cada cliente a su ruta actual
+    current_routes = []  # Lista de rutas actuales
+    current_route_loads = []  # Cargas actuales de cada ruta
     
-    route_endpoints = {}
+    route_endpoints = {}  # Guarda los extremos de cada ruta
 
     for i in clients_to_route:
-        new_route_idx = len(current_routes)
-        current_routes.append([depot_idx, i, depot_idx])
-        current_route_loads.append(demands[i])
-        client_to_route_map[i] = new_route_idx
-        route_endpoints[new_route_idx] = {'start': i, 'end': i}
+        new_route_idx = len(current_routes)  # Índice de la nueva ruta
+        current_routes.append([depot_idx, i, depot_idx])  # Inicializa ruta: depósito-cliente-depósito
+        current_route_loads.append(demands[i])  # Carga inicial es la demanda del cliente
+        client_to_route_map[i] = new_route_idx  # Asocia cliente a la ruta
+        route_endpoints[new_route_idx] = {'start': i, 'end': i}  # Extremos de la ruta
         
     print(f"    Inicialización: {len(clients_to_route)} rutas individuales creadas.")
 
-    savings = calculate_savings(depot_idx, clients_to_route, distance_matrix)
+    savings = calculate_savings(depot_idx, clients_to_route, distance_matrix)  # Calcula ahorros posibles
     print(f"    Calculados {len(savings)} posibles ahorros.")
 
     for (i, j), saving_value in savings:
         if i not in client_to_route_map or j not in client_to_route_map:
-            continue
+            continue  # Si alguno ya fue fusionado, salta
 
-        route_i_idx = client_to_route_map[i]
-        route_j_idx = client_to_route_map[j]
+        route_i_idx = client_to_route_map[i]  # Ruta de i
+        route_j_idx = client_to_route_map[j]  # Ruta de j
 
         if route_i_idx == route_j_idx:
-            continue
+            continue  # No fusionar la misma ruta
             
         endpoints_i = route_endpoints.get(route_i_idx)
         endpoints_j = route_endpoints.get(route_j_idx)
 
         if endpoints_i is None or endpoints_j is None:
-            continue
+            continue  # Si alguna ruta ya fue fusionada, salta
 
-        can_merge = False
-        new_route_nodes = []
-        new_route_load = 0
+        can_merge = False  # Bandera para saber si se puede fusionar
+        new_route_nodes = []  # Nueva ruta fusionada
+        new_route_load = 0  # Nueva carga
         new_start_client = -1
         new_end_client = -1
 
         if i == endpoints_i['end'] and j == endpoints_j['start']:
-            temp_route_i_nodes = current_routes[route_i_idx]
-            temp_route_j_nodes = current_routes[route_j_idx]
+            temp_route_i_nodes = current_routes[route_i_idx]  # Ruta de i
+            temp_route_j_nodes = current_routes[route_j_idx]  # Ruta de j
             
-            new_route_nodes = temp_route_i_nodes[:-1] + temp_route_j_nodes[1:]
-            new_route_load = current_route_loads[route_i_idx] + current_route_loads[route_j_idx]
+            new_route_nodes = temp_route_i_nodes[:-1] + temp_route_j_nodes[1:]  # Fusiona rutas
+            new_route_load = current_route_loads[route_i_idx] + current_route_loads[route_j_idx]  # Suma cargas
             
-            new_start_client = endpoints_i['start']
-            new_end_client = endpoints_j['end']
+            new_start_client = endpoints_i['start']  # Nuevo inicio
+            new_end_client = endpoints_j['end']  # Nuevo fin
             can_merge = True
 
         elif j == endpoints_j['end'] and i == endpoints_i['start']:
             temp_route_j_nodes = current_routes[route_j_idx]
             temp_route_i_nodes = current_routes[route_i_idx]
             
-            new_route_nodes = temp_route_j_nodes[:-1] + temp_route_i_nodes[1:]
-            new_route_load = current_route_loads[route_j_idx] + current_route_loads[route_i_idx]
+            new_route_nodes = temp_route_j_nodes[:-1] + temp_route_i_nodes[1:]  # Fusiona rutas
+            new_route_load = current_route_loads[route_j_idx] + current_route_loads[route_i_idx]  # Suma cargas
             
-            new_start_client = endpoints_j['start']
-            new_end_client = endpoints_i['end']
+            new_start_client = endpoints_j['start']  # Nuevo inicio
+            new_end_client = endpoints_i['end']  # Nuevo fin
             can_merge = True
 
         if can_merge and new_route_load <= vehicle_capacity_unit:
-            new_route_idx = len(current_routes)
-            current_routes.append(new_route_nodes)
-            current_route_loads.append(new_route_load)
-            route_endpoints[new_route_idx] = {'start': new_start_client, 'end': new_end_client}
+            new_route_idx = len(current_routes)  # Índice de la nueva ruta
+            current_routes.append(new_route_nodes)  # Agrega la nueva ruta
+            current_route_loads.append(new_route_load)  # Agrega la nueva carga
+            route_endpoints[new_route_idx] = {'start': new_start_client, 'end': new_end_client}  # Actualiza extremos
 
             for client_node in current_routes[route_i_idx][1:-1]:
-                client_to_route_map[client_node] = new_route_idx
+                client_to_route_map[client_node] = new_route_idx  # Actualiza mapeo de clientes
             for client_node in current_routes[route_j_idx][1:-1]:
                 client_to_route_map[client_node] = new_route_idx
 
-            current_routes[route_i_idx] = None
+            current_routes[route_i_idx] = None  # Marca rutas fusionadas como None
             current_routes[route_j_idx] = None
             current_route_loads[route_i_idx] = 0
             current_route_loads[route_j_idx] = 0
             del route_endpoints[route_i_idx]
             del route_endpoints[route_j_idx]
 
-    final_routes = []
-    final_route_loads = []
+    final_routes = []  # Rutas finales
+    final_route_loads = []  # Cargas finales
     
     vehicle_counter = 0
     for route_idx, route in enumerate(current_routes):
         if route is not None and len(route) > 2:
             if vehicle_counter < num_vehiculos_disponibles:
-                final_routes.append(route)
+                final_routes.append(route)  # Agrega ruta si hay vehículos disponibles
                 final_route_loads.append(current_route_loads[route_idx])
                 vehicle_counter += 1
             else:
@@ -229,61 +229,61 @@ def clarke_wright_savings_parallel(depot_idx, clients_to_route, demands, vehicle
 
 def solve_tsp_for_route(route_id, route_nodes_with_depot, original_client_indices_in_route, distance_matrix):
     if not original_client_indices_in_route:
-        return 0, [route_nodes_with_depot[0], route_nodes_with_depot[0]]
+        return 0, [route_nodes_with_depot[0], route_nodes_with_depot[0]]  # Si no hay clientes, ruta trivial
 
-    tsp_nodes_original_indices = [depot_idx] + sorted(original_client_indices_in_route)
-    tsp_node_to_original_index = {i: original_idx for i, original_idx in enumerate(tsp_nodes_original_indices)}
-    original_to_tsp_node_index = {original_idx: i for i, original_idx in enumerate(tsp_nodes_original_indices)}
+    tsp_nodes_original_indices = [depot_idx] + sorted(original_client_indices_in_route)  # Nodos para el TSP
+    tsp_node_to_original_index = {i: original_idx for i, original_idx in enumerate(tsp_nodes_original_indices)}  # Mapeo local->original
+    original_to_tsp_node_index = {original_idx: i for i, original_idx in enumerate(tsp_nodes_original_indices)}  # Mapeo original->local
 
-    num_tsp_nodes = len(tsp_nodes_original_indices)
+    num_tsp_nodes = len(tsp_nodes_original_indices)  # Número de nodos en el TSP
     
-    tsp_sub_distance_matrix = {}
+    tsp_sub_distance_matrix = {}  # Matriz de distancias para el subproblema TSP
     for i_local in range(num_tsp_nodes):
         for j_local in range(num_tsp_nodes):
             original_i = tsp_node_to_original_index[i_local]
             original_j = tsp_node_to_original_index[j_local]
-            tsp_sub_distance_matrix[(i_local, j_local)] = distance_matrix.get((original_i, original_j), INFINITE_COST)
+            tsp_sub_distance_matrix[(i_local, j_local)] = distance_matrix.get((original_i, original_j), INFINITE_COST)  # Distancia entre nodos
             if i_local == j_local:
-                tsp_sub_distance_matrix[(i_local, j_local)] = 0
+                tsp_sub_distance_matrix[(i_local, j_local)] = 0  # Costo cero para la diagonal
 
-    manager = pywrapcp.RoutingIndexManager(num_tsp_nodes, 1, original_to_tsp_node_index[depot_idx])
-    routing = pywrapcp.RoutingModel(manager)
+    manager = pywrapcp.RoutingIndexManager(num_tsp_nodes, 1, original_to_tsp_node_index[depot_idx])  # Crea el gestor de índices
+    routing = pywrapcp.RoutingModel(manager)  # Crea el modelo de ruteo
 
     def distance_callback(from_index, to_index):
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
-        return tsp_sub_distance_matrix.get((from_node, to_node), INFINITE_COST)
+        return tsp_sub_distance_matrix.get((from_node, to_node), INFINITE_COST)  # Devuelve la distancia entre nodos
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)  # Registra la función de distancia
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)  # Asigna la función de costo
 
-    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+    search_parameters = pywrapcp.DefaultRoutingSearchParameters()  # Parámetros de búsqueda
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)  # Estrategia inicial
     search_parameters.local_search_metaheuristic = (
-        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
-    search_parameters.time_limit.seconds = 30
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)  # Metaheurística
+    search_parameters.time_limit.seconds = 30  # Límite de tiempo
 
-    assignment = routing.SolveWithParameters(search_parameters)
+    assignment = routing.SolveWithParameters(search_parameters)  # Resuelve el TSP
 
-    route_cost = 0
-    optimized_route_nodes = []
+    route_cost = 0  # Costo de la ruta
+    optimized_route_nodes = []  # Ruta optimizada
 
     if assignment:
         index = routing.Start(0)
         while not routing.IsEnd(index):
             previous_index = index
-            original_node = tsp_node_to_original_index[manager.IndexToNode(index)]
-            optimized_route_nodes.append(original_node)
-            index = assignment.Value(routing.NextVar(index))
-            route_cost += routing.GetArcCostForVehicle(previous_index, index, 0)
-        original_node = tsp_node_to_original_index[manager.IndexToNode(index)]
+            original_node = tsp_node_to_original_index[manager.IndexToNode(index)]  # Nodo original
+            optimized_route_nodes.append(original_node)  # Agrega nodo a la ruta
+            index = assignment.Value(routing.NextVar(index))  # Siguiente nodo
+            route_cost += routing.GetArcCostForVehicle(previous_index, index, 0)  # Suma el costo
+        original_node = tsp_node_to_original_index[manager.IndexToNode(index)]  # Nodo final
         optimized_route_nodes.append(original_node)
         
-        return route_cost, optimized_route_nodes
+        return route_cost, optimized_route_nodes  # Devuelve costo y ruta
     else:
         print(f"    Advertencia: No se encontró una ruta TSP para el Vehículo {route_id} con clientes {original_client_indices_in_route}.")
-        return INFINITE_COST, []
+        return INFINITE_COST, []  # Si no hay solución, retorna costo infinito
 
 def solve_inventory_routing_problem_three_phase(
     current_cantidad_total_producto_deposito,
